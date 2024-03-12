@@ -1,0 +1,850 @@
+Program.Sub.ScreenSU.Start
+Gui.frmOption..create
+Gui.frmOption..caption("Label Option")
+Gui.frmOption..size(3780,2850)
+Gui.frmOption..minx(0)
+Gui.frmOption..miny(0)
+Gui.frmOption..position(0,0)
+Gui.frmOption..event(UnLoad,frmoption_unload)
+Gui.frmOption..forecolor(0)
+Gui.frmOption..fontstyle(,,,)
+Gui.frmOption..BackColor(-2147483633)
+Gui.frmOption..maxbutton(False)
+Gui.frmOption..minbutton(False)
+Gui.frmOption..mousepointer(0)
+Gui.frmOption.lbl1.create(label,"Extension Digit :",False,1215,255,1,330,195,True,0,Arial,8,-2147483633,0)
+Gui.frmOption.lbl1.defaultvalue("")
+Gui.frmOption.lbl2.create(label,"Company Prefix :",True,1245,255,1,215,600,True,0,Arial,8,-2147483633,0)
+Gui.frmOption.lbl2.defaultvalue("")
+Gui.frmOption.lbl3.create(label,"Serial Reference :",True,1335,255,1,130,1000,True,0,Arial,8,-2147483633,0)
+Gui.frmOption.lbl3.defaultvalue("")
+Gui.frmOption.lbl4.create(label,"User Field :",False,915,255,1,630,1455,True,0,Arial,8,-2147483633,0)
+Gui.frmOption.lbl4.defaultvalue("")
+Gui.frmOption.txtExtDigit.create(textbox,"",False,1215,300,0,1545,195,True,0,Arial,8,-2147483643,1)
+Gui.frmOption.txtExtDigit.maxLength(1)
+Gui.frmOption.txtExtDigit.defaultvalue("")
+Gui.frmOption.txtCoPrefix.create(textbox,"",True,1215,300,0,1545,600,True,0,Arial,8,-2147483643,1)
+Gui.frmOption.txtCoPrefix.maxLength(10)
+Gui.frmOption.txtCoPrefix.defaultvalue("")
+Gui.frmOption.ddlSerial.create(dropdownlist)
+Gui.frmOption.ddlSerial.size(1215,330)
+Gui.frmOption.ddlSerial.position(1545,1000)
+Gui.frmOption.ddlSerial.defaultvalue("")
+Gui.frmOption.ddlUserfld.create(dropdownlist)
+Gui.frmOption.ddlUserfld.visible(False)
+Gui.frmOption.ddlUserfld.size(1215,330)
+Gui.frmOption.ddlUserfld.position(1530,1455)
+Gui.frmOption.ddlUserfld.defaultvalue("")
+Gui.frmOption.cmdsave.create(button)
+Gui.frmOption.cmdsave.caption("Save")
+Gui.frmOption.cmdsave.size(855,375)
+Gui.frmOption.cmdsave.position(180,1755)
+Gui.frmOption.cmdsave.event(Click,cmdsave_click)
+Gui.frmOption.cmdsave.defaultvalue("")
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Global.sPklst.Declare(String)
+V.Global.sOrdno.Declare(String)
+
+
+' RAN 04/15/2017
+
+
+
+
+'f.Intrinsic.UI.Msgbox(V.Caller.Hook)
+
+V.Local.sCon.Declare(String)
+
+'Get Customer
+F.Intrinsic.Control.If(V.Caller.Hook,=,14350)
+	Variable.Passed.GLOBAL.set(Variable.Passed.000002.trim)
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,14341)
+'AR> File> Customers
+	V.Passed.000067.Set("SSCC Label Opts")
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.endif
+
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,14342)
+'Script1
+	F.Intrinsic.Control.CallSub(Loaddata)
+	Gui.frmOption..Show
+'F.Intrinsic.Control.elseIf(V.Caller.Hook,=,28532)
+'F.Intrinsic.Control.elseIf(V.Caller.Hook,=,25972,"or",V.Caller.Hook,=,28532,V.Caller.Hook,=,32023,V.Caller.Hook,=,32033,V.Caller.Hook,=,32026)
+'Print BOL Labels
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,32026)
+''(OrderEntry>Transactions>Shipments,post-Save)
+'	F.Intrinsic.Control.CallSub(Generate_checkdigit)
+	f.Intrinsic.Control.CallSub(new_checkdigit)
+	F.Intrinsic.Control.CallSub(Frmoption_unload)
+F.Intrinsic.Control.endif
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.frmoption_unload.Start
+F.Intrinsic.Control.SetErrorHandler("frmoption_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+
+
+
+
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("frmoption_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.frmoption_unload.End
+
+Program.Sub.cmdsave_click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdsave_click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sSql.Declare(String)
+
+
+F.Intrinsic.String.Build("select * from GCG_4524_SSCC where customer = '{0}' ",Variable.Passed.GLOBAL,V.Local.sSql)
+F.ODBC.Connection!conx.OpenLocalRecordsetRW("RST",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.conx!RST.EOF,"=",True)
+	F.ODBC.conx!RST.AddNew
+F.Intrinsic.Control.Endif
+
+F.ODBC.conx!RST.Set!customer(Variable.Passed.GLOBAL)
+'F.ODBC.conx!RST.Set!Extension_Digit(V.Screen.frmOption!txtExtDigit.Text)
+F.ODBC.conx!RST.Set!Company_Prefix(V.Screen.frmOption!txtCoPrefix.Text)
+
+
+F.ODBC.conx!RST.Set!Serial_Reference(V.Screen.frmOption!ddlSerial.ListIndex)
+'F.ODBC.conx!RST.Set!OE_User_Field(V.Screen.frmOption!ddlUserfld.text)
+
+F.ODBC.conx!RST.Update
+
+F.ODBC.conx!RST.Close
+
+F.Intrinsic.UI.Msgbox("Saved successfully")
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdsave_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.cmdsave_click.End
+
+Program.Sub.LoadData.Start
+F.Intrinsic.Control.SetErrorHandler("LoadData_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+
+
+V.Local.sSql.Declare(String)
+
+	Gui.frmOption.ddlSerial.AddItem("Waybill")
+	Gui.frmOption.ddlSerial.AddItem("Packing List")
+'
+'	Gui.frmOption.ddlUserfld.AddItem("1")
+'	Gui.frmOption.ddlUserfld.AddItem("2")
+'	Gui.frmOption.ddlUserfld.AddItem("3")
+'	Gui.frmOption.ddlUserfld.AddItem("4")
+'	Gui.frmOption.ddlUserfld.AddItem("5")
+
+
+	F.Intrinsic.String.Build("select * from GCG_4524_SSCC where customer = '{0}' ",Variable.Passed.GLOBAL,V.Local.sSql)
+	F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+	F.Intrinsic.Control.If(V.ODBC.conx!RST.EOF,"=",False)
+'		Gui.frmOption.txtExtDigit.text(V.ODBC.conx!RST.FieldVal!Extension_Digit)
+		Gui.frmOption.txtCoPrefix.text(V.ODBC.conx!RST.FieldVal!Company_Prefix)
+		Gui.frmOption.ddlSerial.ListIndex(V.ODBC.conx!RST.FieldVal!Serial_Reference)
+
+'		Gui.frmOption.ddlUserfld.text(V.ODBC.conx!RST.FieldVal!OE_User_Field)
+	F.Intrinsic.Control.endif
+	F.ODBC.conx!RST.Close
+
+
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("LoadData_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.LoadData.End
+
+Program.Sub.Generate_checkdigit.Start
+F.Intrinsic.Control.SetErrorHandler("Generate_checkdigit_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+
+
+
+V.Local.sRet.Declare(String)
+V.local.i.Declare(Long)
+V.local.lTot1.Declare(Long)
+V.local.lTot2.Declare(Long)
+V.local.lTot3.Declare(Long)
+V.local.lTot4.Declare(Long)
+V.Local.sSql.Declare(String)
+V.local.lChkDigit.Declare(Long)
+V.Local.sSerilaRef.Declare(String)
+V.local.bRet.Declare(Boolean)
+V.Local.sOrdno.Declare(String)
+V.Local.sOrdsuffix.Declare(String)
+V.Local.sExtensionDigit.Declare(String)
+
+V.Local.sCust.Declare(String)
+V.Local.sPklst.Declare(String)
+
+'F.Intrinsic.Debug.InvokeDebugger
+
+F.Intrinsic.Debug.Stop
+
+' there are 2 post save hook - new & modify
+'Save BOL
+
+
+F.Intrinsic.Control.if(V.Caller.Hook,=,32023)
+	'carton or pallet>0
+	F.Intrinsic.Control.If(Variable.Passed.000005.trim,>,0,"or",Variable.Passed.000061.trim,>,0)
+		V.Local.sCust.Set(Variable.Passed.000058.trim)
+		V.Local.sPklst.Set(Variable.Passed.FIRST-PACKING-LIST.trim)
+		V.Local.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	f.Intrinsic.Control.Else
+		F.Intrinsic.Control.Exitsub
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,25972)
+'modify
+	V.Local.sCust.Set(Variable.Passed.000006.trim)
+	V.Local.sPklst.Set(Variable.Passed.000003.trim)
+	V.Local.sOrdno.Set(Variable.Passed.000150.Trim)
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,28532)
+'new
+	F.Intrinsic.Control.If(Variable.Passed.000007.trim,<>,"Y")
+	'not BOL
+		V.Local.sCust.Set(Variable.Passed.000204.trim)
+		V.Local.sPklst.Set(Variable.Passed.000168.trim)
+		V.Local.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	F.Intrinsic.Control.elseIf(Variable.Passed.000106.trim,=,"Y")
+	'shipping screen
+		V.Local.sCust.Set(Variable.Passed.000204.trim)
+		V.Local.sPklst.Set(Variable.Passed.000168.trim)
+		V.Local.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	f.Intrinsic.Control.Else
+		F.Intrinsic.Control.Exitsub
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(V.Local.sPklst.Long,=,0)
+	F.Intrinsic.Control.Exitsub
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.String.LPad(V.Local.sPklst,"0",7,V.Local.sPklst)
+
+F.Intrinsic.String.Build("select sum(CONVERT(PLLT_NO, SQL_INTEGER)) as PLLT_NO,sum(CONVERT(CRTN_No, SQL_INTEGER)) as CRTN_No from BOL_PACK_DTL  where order_no = '{0}' and pck_no = '{1}' ",V.Global.sOrdno,V.Local.sPklst,V.Local.sCust,V.Local.sSql)
+F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldVal!PLLT_NO,>,0)
+	V.Local.sExtensionDigit.Set("1")
+F.Intrinsic.Control.ElseIf(V.ODBC.conx!RST.FieldVal!CRTN_No,>,0)
+	V.Local.sExtensionDigit.Set("0")
+F.Intrinsic.Control.Else
+	V.Local.sExtensionDigit.Set("3")
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!RST.Close
+
+F.Intrinsic.Debug.Stop
+
+F.Intrinsic.String.Build("select * from GCG_4524_SSCC where customer = '{0}' ",V.Local.sCust,V.Local.sSql)
+F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.conx!RST.EOF,"=",False)
+F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,0)
+	'0 - Waybill
+	V.Local.sSerilaRef.Set(V.passed.000178.trim)
+F.Intrinsic.Control.ElseIf(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,1)
+	'1 - Packinglist
+'			V.Local.sSerilaRef.Set(V.passed.000168)
+	'Variable.Passed.000003
+	V.Local.sSerilaRef.Set(V.Local.sPklst)
+F.Intrinsic.Control.EndIf
+
+
+'For each of the 17 digits that make up the Extension Digit + Company Prefix + Serial Number, beginning with a 3, multiply every digit by 3 or 1, alternatively.
+'Get a sum of the resulting products. Subtract that sum from the nearest equal or higher multiple of 10.
+
+
+		f.Intrinsic.String.LPad(V.Local.sSerilaRef,"0",9,V.Local.sSerilaRef)
+
+'		F.Intrinsic.String.Build("{0}{1}{2}",V.ODBC.conx!RST.FieldVal!Extension_Digit,V.ODBC.conx!RST.FieldVal!Company_Prefix,V.Local.sSerilaRef.trim,V.Local.sRet)
+		F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sExtensionDigit,V.ODBC.conx!RST.FieldVal!Company_Prefix,V.Local.sSerilaRef.trim,V.Local.sRet)
+
+		Function.Intrinsic.String.LimitSplit(V.Local.sRet,1,V.Local.sRet)
+
+		F.Intrinsic.Control.For(V.local.i,0,V.Local.sRet.UBound,1)
+			F.Intrinsic.Control.If(V.local.bRet,=,False)
+				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),3,V.local.lTot1)
+				V.local.bRet.set(True)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),1,V.local.lTot1)
+				V.local.bRet.set(False)
+			F.Intrinsic.Control.endif
+			F.Intrinsic.Math.Add(V.local.lTot3,V.local.lTot1,V.local.lTot3)
+		F.Intrinsic.Control.Next(V.local.i)
+
+'get remainder
+		F.Intrinsic.Math.Mod(V.local.lTot3,10,V.local.lTot2)
+
+'no remainder
+		Function.Intrinsic.Math.IDIV(V.local.lTot3,10,V.local.lTot4)
+		Function.Intrinsic.Math.Mult(V.local.lTot4,10,V.local.lTot4)
+
+''nearest equal or higher multiple of 10
+'		F.Intrinsic.Control.If(V.local.lTot2,>,4)
+'			Function.Intrinsic.Math.add(V.local.lTot4,10,V.local.lTot4)
+'		F.Intrinsic.Control.EndIf
+
+'nearest equal or higher multiple of 10 - according to Scott
+		F.Intrinsic.Control.If(V.local.lTot2,>,0)
+			Function.Intrinsic.Math.add(V.local.lTot4,10,V.local.lTot4)
+		F.Intrinsic.Control.EndIf
+
+'		F.Intrinsic.Math.Sub(V.local.lTot3,V.local.lTot4,V.Local.lChkDigit)
+
+		f.Intrinsic.Control.If(V.local.lTot3,>,V.local.lTot4)
+			F.Intrinsic.Math.Sub(V.local.lTot3,V.local.lTot4,V.Local.lChkDigit)
+		f.Intrinsic.Control.Else
+			F.Intrinsic.Math.Sub(V.local.lTot4,V.local.lTot3,V.Local.lChkDigit)
+		f.Intrinsic.Control.EndIf
+
+'get User Field
+		F.Intrinsic.String.Build("User_{0}",V.ODBC.conx!RST.FieldVal!OE_User_Field,V.Local.sRet)
+
+'Variable.Passed.000150 - orderno
+
+'		V.Local.sOrdno.Set(Variable.Passed.000150)
+		F.Intrinsic.String.LPad(V.Local.sOrdno.Trim,"0",7,V.Local.sOrdno)
+
+
+
+F.Intrinsic.Debug.Stop
+
+'		F.Intrinsic.String.Build("00{0}{1}{2}{3}",V.ODBC.conx!RST.FieldVal!Extension_Digit,V.ODBC.conx!RST.FieldVal!Company_Prefix,V.Local.sSerilaRef,V.local.lChkDigit.String,V.Local.sSerilaRef)
+		F.Intrinsic.String.Build("00{0}{1}{2}{3}",V.Local.sExtensionDigit,V.ODBC.conx!RST.FieldVal!Company_Prefix,V.Local.sSerilaRef,V.local.lChkDigit.String,V.Local.sSerilaRef)
+
+'		F.Intrinsic.String.Build("Update order_header set {0} = '{1}' where order_no = '{2}' and  rtrim(ltrim(record_no)) = 'A' ",V.Local.sRet,V.Local.sSerilaRef,V.Local.sOrdno,V.Local.sSql)
+
+	'11/8/2016 DH changed to save to shipment_header
+'		F.Intrinsic.String.Build("Update SHIPMENT_HEADER set {0} = '{1}' where order_no = '{2}' and  rtrim(ltrim(RECORD_TYPE)) = 'A' ",V.Local.sRet,V.Local.sSerilaRef,V.Local.sOrdno,V.Local.sSql)
+		'ranjit
+		F.Intrinsic.String.Build("Update SHIPMENT_HEADER set {0} = '{1}' where order_no = '{2}' and  rtrim(ltrim(RECORD_TYPE)) = 'A' and pck_no = '{3}' ",V.Local.sRet,V.Local.sSerilaRef,V.Local.sOrdno,V.Local.sPklst,V.Local.sSql)
+		F.ODBC.Connection!conx.Execute(V.Local.sSql)
+
+	F.Intrinsic.Control.endif
+	F.ODBC.conx!RST.Close
+
+
+
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Generate_checkdigit_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Generate_checkdigit.End
+
+Program.Sub.Test_ChkDigit.Start
+F.Intrinsic.Control.SetErrorHandler("Test_ChkDigit_Err")
+F.Intrinsic.Control.ClearErrors
+
+'V.Local.sError.Declare(String)
+'
+'
+'V.Local.sRet.Declare(String)
+'V.local.i.Declare(Long)
+'V.local.lTot1.Declare(Long)
+'V.local.lTot2.Declare(Long)
+'V.local.lTot3.Declare(Long)
+'V.local.lTot4.Declare(Long)
+'V.Local.sSql.Declare(String)
+'V.local.lChkDigit.Declare(Long)
+'V.Local.sSerilaRef.Declare(String)
+'V.local.bRet.Declare(Boolean)
+'V.Local.sOrdno.Declare(String)
+'V.Local.sOrdsuffix.Declare(String)
+'
+'V.Local.sCust.Declare(String)
+'V.Local.sPklst.Declare(String)
+'
+'' there are 2 post save hook - new & modify
+'
+''F.Intrinsic.String.Build("select * from GCG_3847_UCCGS1 where customer = '{0}' ",V.Local.sCust,V.Local.sSql)
+''
+''	F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+''	F.Intrinsic.Control.If(V.ODBC.conx!RST.EOF,"=",False)
+'
+'
+''		F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,0)
+''			'0 - Waybill
+''			V.Local.sSerilaRef.Set(V.passed.000178.trim)
+''		F.Intrinsic.Control.ElseIf(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,1)
+''			'1 - Packinglist
+'''			V.Local.sSerilaRef.Set(V.passed.000168)
+''			'Variable.Passed.000003
+''			V.Local.sSerilaRef.Set(V.Local.sPklst)
+''
+''		F.Intrinsic.Control.EndIf
+'
+''For each of the 17 digits that make up the Extension Digit + Company Prefix + Serial Number, beginning with a 3, multiply every digit by 3 or 1, alternatively.
+''Get a sum of the resulting products. Subtract that sum from the nearest equal or higher multiple of 10.
+'
+'	
+''F.Intrinsic.Debug.InvokeDebugger
+''
+''F.Intrinsic.Debug.Stop
+'
+'		V.Local.sSerilaRef.Set("0034133")
+'	
+'		f.Intrinsic.String.LPad(V.Local.sSerilaRef,"0",9,V.Local.sSerilaRef)
+'		
+'		F.Intrinsic.String.Build("{0}{1}{2}","0","0661949",V.Local.sSerilaRef.trim,V.Local.sRet)
+'
+'		Function.Intrinsic.String.LimitSplit(V.Local.sRet,1,V.Local.sRet)
+'
+'		F.Intrinsic.Control.For(V.local.i,0,V.Local.sRet.UBound,1)
+'			F.Intrinsic.Control.If(V.local.bRet,=,False)
+'				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),3,V.local.lTot1)
+'				V.local.bRet.set(True)
+'			F.Intrinsic.Control.Else
+'				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),1,V.local.lTot1)
+'				V.local.bRet.set(False)
+'			F.Intrinsic.Control.endif
+'			F.Intrinsic.Math.Add(V.local.lTot3,V.local.lTot1,V.local.lTot3)
+'		F.Intrinsic.Control.Next(V.local.i)
+'
+'F.Intrinsic.Debug.Stop
+''get remainder
+'		F.Intrinsic.Math.Mod(V.local.lTot3,10,V.local.lTot2)
+'
+''no remainder
+'		Function.Intrinsic.Math.IDIV(V.local.lTot3,10,V.local.lTot4)
+'		Function.Intrinsic.Math.Mult(V.local.lTot4,10,V.local.lTot4)
+'
+''nearest equal or higher multiple of 10
+'		F.Intrinsic.Control.If(V.local.lTot2,>,4)
+'			Function.Intrinsic.Math.add(V.local.lTot4,10,V.local.lTot4)
+'		F.Intrinsic.Control.EndIf
+'
+'		f.Intrinsic.Control.If(V.local.lTot3,>,V.local.lTot4)
+'			F.Intrinsic.Math.Sub(V.local.lTot3,V.local.lTot4,V.Local.lChkDigit)
+'		f.Intrinsic.Control.Else
+'			F.Intrinsic.Math.Sub(V.local.lTot4,V.local.lTot3,V.Local.lChkDigit)
+'		f.Intrinsic.Control.EndIf
+'
+''get User Field
+''		F.Intrinsic.String.Build("User_{0}",V.ODBC.conx!RST.FieldVal!OE_User_Field,V.Local.sRet)
+'	
+''Variable.Passed.000150 - orderno
+'
+''		V.Local.sOrdno.Set(Variable.Passed.000150)
+'		F.Intrinsic.String.LPad(V.Local.sOrdno.Trim,"0",7,V.Local.sOrdno)
+'
+'F.Intrinsic.Debug.Stop
+'''00 V.ODBC.conx!RST.FieldVal!Extension_Digit V.ODBC.conx!RST.FieldVal!Company_Prefix V.Local.sSerilaRef  V.local.lChkDigit.String
+'
+''F.Intrinsic.String.Build("00{0}{1}{2}{3}",V.ODBC.conx!RST.FieldVal!Extension_Digit,V.ODBC.conx!RST.FieldVal!Company_Prefix,V.Local.sSerilaRef,V.local.lChkDigit.String,V.Local.sSerilaRef)
+'
+'
+'
+'
+'
+'
+'F.Intrinsic.Control.ExitSub
+'
+'F.Intrinsic.Control.Label("Test_ChkDigit_Err")
+'F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+'	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+'	F.Intrinsic.UI.Msgbox(V.Local.sError)
+'Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Test_ChkDigit.End
+
+Program.Sub.New_CheckDigit.Start
+F.Intrinsic.Control.SetErrorHandler("New_CheckDigit_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sRet.Declare(String)
+V.local.i.Declare(Long)
+V.local.lTot1.Declare(Long)
+V.local.lTot2.Declare(Long)
+V.local.lTot3.Declare(Long)
+V.local.lTot4.Declare(Long)
+V.Local.sSql.Declare(String)
+V.local.lChkDigit.Declare(Long)
+V.Local.sSerilaRef.Declare(String)
+V.Local.sNewSerilaRef.Declare(String)
+V.local.bRet.Declare(Boolean)
+
+V.Local.sOrdsuffix.Declare(String)
+V.Local.sExtensionDigit.Declare(String)
+V.Local.sPalletno.Declare(String)
+V.Local.sCartonno.Declare(String)
+V.Local.sCompanyPrefix.Declare(String)
+V.Local.sCust.Declare(String)
+V.Local.sSeq.Declare(String)
+
+' there are 2 post save hook - new & modify
+'Save BOL
+'32033
+
+
+'SAVE OT PRE-EXIT - BILLOFLADING
+
+'F.Intrinsic.Control.if(V.Caller.Hook,=,32023,"OR",V.Caller.Hook,=,32033,V.Caller.Hook,=,32026)
+'Print BOL Labels
+F.Intrinsic.Control.if(V.Caller.Hook,=,32026)
+	'carton or pallet>0
+	F.Intrinsic.Control.If(Variable.Passed.000005.trim,>,0,"or",Variable.Passed.000061.trim,>,0)
+		V.Local.sCust.Set(Variable.Passed.000058.trim)
+		V.Global.sPklst.Set(Variable.Passed.FIRST-PACKING-LIST.trim)
+		V.Global.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	f.Intrinsic.Control.Else
+		F.Intrinsic.Control.Exitsub
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,25972)
+'modify
+	V.Local.sCust.Set(Variable.Passed.000006.trim)
+	V.Global.sPklst.Set(Variable.Passed.000003.trim)
+	V.Global.sOrdno.Set(Variable.Passed.000150.Trim)
+F.Intrinsic.Control.elseIf(V.Caller.Hook,=,28532)
+'new
+	F.Intrinsic.Control.If(Variable.Passed.000007.trim,<>,"Y")
+	'not BOL
+		V.Local.sCust.Set(Variable.Passed.000204.trim)
+		V.Global.sPklst.Set(Variable.Passed.000168.trim)
+		V.Global.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	F.Intrinsic.Control.elseIf(Variable.Passed.000106.trim,=,"Y")
+	'shipping screen
+		V.Local.sCust.Set(Variable.Passed.000204.trim)
+		V.Global.sPklst.Set(Variable.Passed.000168.trim)
+		V.Global.sOrdno.Set(Variable.Passed.FIRST-ORDER.trim)
+	f.Intrinsic.Control.Else
+		F.Intrinsic.Control.Exitsub
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(V.Global.sPklst.Long,=,0)
+	F.Intrinsic.Control.Exitsub
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.String.LPad(V.Global.sPklst,"0",7,V.Global.sPklst)
+
+F.Intrinsic.String.Build("select * from GCG_4524_SSCC where customer = '{0}' ",V.Local.sCust,V.Local.sSql)
+F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.conx!RST.EOF,"=",False)
+	F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,0)
+		'0 - Waybill
+		'SAVE OT PRE-EXIT
+		F.Intrinsic.Control.if(V.Caller.Hook,=,32023,"OR",V.Caller.Hook,=,32033,V.Caller.Hook,=,32026)
+			V.Local.sSerilaRef.Set(Variable.Passed.000006.Trim)
+		f.Intrinsic.Control.Else
+			V.Local.sSerilaRef.Set(V.passed.000178.trim)
+		f.Intrinsic.Control.endif
+	F.Intrinsic.Control.ElseIf(V.ODBC.conx!RST.FieldVal!Serial_Reference,=,1)
+		V.Local.sSerilaRef.Set(V.Global.sPklst)
+	F.Intrinsic.Control.EndIf
+
+V.Local.sCompanyPrefix.Set(V.ODBC.conx!RST.FieldVal!Company_Prefix)
+
+F.Intrinsic.Control.endif
+F.ODBC.conx!RST.Close
+
+'Delete before modify
+f.Intrinsic.String.Build("delete from BOL_CART_NUM_SSCC where PCK_NO = '{0}'",v.Global.sPklst,v.Local.Ssql)
+f.ODBC.Connection!conx.Execute(v.Local.Ssql)
+
+'F.Intrinsic.String.Build("select CONVERT(PLLT_NO, SQL_INTEGER) as PLLT_NO,CONVERT(CRTN_No, SQL_INTEGER) as CRTN_No from BOL_PACK_DTL  where order_no = '{0}' and pck_no = '{1}' ",V.Global.sOrdno,V.Global.sPklst,V.Local.sCust,V.Local.sSql)
+F.Intrinsic.String.Build("select distinct PLLT_NO,CRTN_No,order_line from BOL_PACK_DTL  where order_no = '{0}' and pck_no = '{1}' ",V.Global.sOrdno,V.Global.sPklst,V.Local.sCust,V.Local.sSql)
+
+F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST",V.Local.sSql)
+
+f.Intrinsic.Control.DoUntil(V.ODBC.conx!RST.EOF,"=",True)
+
+'	F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldVal!PLLT_NO,>,0)
+'		V.Local.sExtensionDigit.Set("1")
+'	F.Intrinsic.Control.ElseIf(V.ODBC.conx!RST.FieldVal!CRTN_No,>,0)
+'		V.Local.sExtensionDigit.Set("0")
+'	F.Intrinsic.Control.Else
+		V.Local.sExtensionDigit.Set("3")
+'	F.Intrinsic.Control.EndIf
+
+
+	f.Intrinsic.String.LPad(V.Local.sSerilaRef,"0",7,V.Local.sSerilaRef)
+	'Last 6 chars
+	f.Intrinsic.String.Right(V.Local.sSerilaRef,6,V.Local.sSerilaRef)
+
+	F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldValLong!PLLT_NO,>,0)
+		V.Local.sExtensionDigit.Set("1")
+
+		V.Local.sPalletno.Set(V.ODBC.conx!RST.FieldVal!PLLT_NO)
+		f.Intrinsic.String.Right(V.ODBC.conx!RST.FieldVal!PLLT_NO,3,V.Local.sRet)
+
+		'Last 3 chars of pallet
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sSerilaRef,V.Local.sRet,V.Local.sNewSerilaRef)
+		f.Intrinsic.Control.CallSub(update_chkdigit,"sExtensionDigit",V.Local.sExtensionDigit,"sCompanyPrefix",V.Local.sCompanyPrefix,"sSerilaRef",V.Local.sNewSerilaRef,"Container","PALLET","Pallet",V.Local.sPalletno)
+	F.Intrinsic.Control.EndIf
+
+'F.Intrinsic.Debug.InvokeDebugger
+'
+'F.Intrinsic.Debug.Stop
+
+	f.Intrinsic.Control.CallSub(createflag,"SSCCFlag",v.Passed.SSCCFLAG.Trim)
+	
+	
+	F.Intrinsic.Debug.Stop
+	F.Intrinsic.Control.If(V.ODBC.conx!RST.FieldValLong!CRTN_No,>,0)
+		V.Local.sExtensionDigit.Set("0")
+
+		V.Local.sCartonno.Set(V.ODBC.conx!RST.FieldVal!CRTN_No)
+'
+		'check for Create multiple sscc records flag
+		f.Intrinsic.Control.If(v.Passed.SSCCFLAG.Trim,<>,"Y")
+'		f.Intrinsic.Control.If(V.Global.sPklst,=,"Y")
+			F.Intrinsic.String.Build("select count(*) as CNT from BOL_PACK_DTL  where order_no = '{0}' and pck_no = '{1}' and CRTN_NO = '{2}'",V.Global.sOrdno,V.Global.sPklst,V.Local.sCartonno,V.Local.sSql)
+			F.ODBC.Connection!conx.OpenlocalRecordsetRO("RST1",V.Local.sSql)
+			'> 1 
+			F.Intrinsic.Control.If(V.ODBC.conx!RST1.FieldVal!CNT,>,1)
+				f.Intrinsic.String.Build("Update BOL_CARTON_NUM set USER_DFND_NO = 'MIXED' where PCK_NO = '{0}' and CRTN_NO = '{1}'",v.Global.sPklst,V.Local.sCartonno,v.Local.Ssql)
+				f.ODBC.Connection!conx.Execute(v.Local.Ssql)
+				'for Mixed caton 5+2+2
+				f.Intrinsic.String.Right(V.ODBC.conx!RST.FieldVal!CRTN_No,2,V.Local.sRet)
+				f.Intrinsic.Control.DoUntil(V.ODBC.conx!RST1.EOF,"=",True)
+	'					f.Intrinsic.String.Right(V.ODBC.conx!RST.FieldVal!order_line,2,V.Local.sSeq)
+						'get actaul line no eliminate the last 0
+						f.Intrinsic.String.Mid(V.ODBC.conx!RST.FieldVal!order_line,2,2,V.Local.sSeq)
+						f.Intrinsic.String.Right(V.Local.sSerilaRef,5,V.Local.sSerilaRef)
+					'Last 3 chars of carton
+						F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sSerilaRef,V.Local.sRet,V.Local.sSeq,V.Local.sNewSerilaRef)
+
+						f.Intrinsic.Control.CallSub(update_chkdigit,"sExtensionDigit",V.Local.sExtensionDigit,"sCompanyPrefix",V.Local.sCompanyPrefix,"sSerilaRef",V.Local.sNewSerilaRef,"Container","MIXED","Carton",V.Local.sCartonno,"Seq",V.ODBC.conx!RST.FieldVal!order_line)
+					f.ODBC.conx!RST1.MoveNext
+				f.Intrinsic.Control.Loop 
+			f.Intrinsic.Control.Else
+				f.Intrinsic.String.Right(V.ODBC.conx!RST.FieldVal!CRTN_No,3,V.Local.sRet)
+				'Last 3 chars of carton
+				F.Intrinsic.String.Build("{0}{1}",V.Local.sSerilaRef,V.Local.sRet,V.Local.sNewSerilaRef)
+				f.Intrinsic.Control.CallSub(update_chkdigit,"sExtensionDigit",V.Local.sExtensionDigit,"sCompanyPrefix",V.Local.sCompanyPrefix,"sSerilaRef",V.Local.sNewSerilaRef,"Container","CARTON","Carton",V.Local.sCartonno)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.conx!RST1.Close
+		f.Intrinsic.Control.Else
+			f.Intrinsic.String.Right(V.ODBC.conx!RST.FieldVal!CRTN_No,3,V.Local.sRet)
+			'Last 3 chars of carton
+			F.Intrinsic.String.Build("{0}{1}",V.Local.sSerilaRef,V.Local.sRet,V.Local.sNewSerilaRef)
+			f.Intrinsic.Control.CallSub(update_chkdigit,"sExtensionDigit",V.Local.sExtensionDigit,"sCompanyPrefix",V.Local.sCompanyPrefix,"sSerilaRef",V.Local.sNewSerilaRef,"Container","CARTON","Carton",V.Local.sCartonno)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	f.ODBC.conx!RST.MoveNext 
+f.Intrinsic.Control.Loop 
+F.ODBC.conx!RST.Close
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("New_CheckDigit_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.New_CheckDigit.End
+
+Program.Sub.Update_chkDigit.Start
+F.Intrinsic.Control.SetErrorHandler("Update_chkDigit_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.local.bRet.Declare(boolean)
+V.local.i.Declare(long)
+V.local.lTot3.Declare(long)
+V.local.lTot1.Declare(long)
+V.local.lTot2.Declare(long)
+V.local.lTot4.Declare(long)
+V.Local.lChkDigit.Declare(long)
+V.Local.sSerilaRef.Declare(String)
+V.Local.sSql.Declare(String)
+
+
+'For each of the 17 digits that make up the Extension Digit + Company Prefix + Serial Number, beginning with a 3, multiply every digit by 3 or 1, alternatively.
+'Get a sum of the resulting products. Subtract that sum from the nearest equal or higher multiple of 10.
+
+
+		F.Intrinsic.String.Build("{0}{1}{2}",V.Args.sExtensionDigit,V.Args.sCompanyPrefix,V.Args.sSerilaRef.trim,V.Local.sRet)
+
+		Function.Intrinsic.String.LimitSplit(V.Local.sRet,1,V.Local.sRet)
+
+		F.Intrinsic.Control.For(V.local.i,0,V.Local.sRet.UBound,1)
+			F.Intrinsic.Control.If(V.local.bRet,=,False)
+				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),3,V.local.lTot1)
+				V.local.bRet.set(True)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Math.Mult(V.Local.sRet(V.local.i),1,V.local.lTot1)
+				V.local.bRet.set(False)
+			F.Intrinsic.Control.endif
+			F.Intrinsic.Math.Add(V.local.lTot3,V.local.lTot1,V.local.lTot3)
+		F.Intrinsic.Control.Next(V.local.i)
+
+'get remainder
+		F.Intrinsic.Math.Mod(V.local.lTot3,10,V.local.lTot2)
+
+'no remainder
+		Function.Intrinsic.Math.IDIV(V.local.lTot3,10,V.local.lTot4)
+		Function.Intrinsic.Math.Mult(V.local.lTot4,10,V.local.lTot4)
+
+'nearest equal or higher multiple of 10 - according to Scott
+		F.Intrinsic.Control.If(V.local.lTot2,>,0)
+			Function.Intrinsic.Math.add(V.local.lTot4,10,V.local.lTot4)
+		F.Intrinsic.Control.EndIf
+
+'		F.Intrinsic.Math.Sub(V.local.lTot3,V.local.lTot4,V.Local.lChkDigit)
+
+		f.Intrinsic.Control.If(V.local.lTot3,>,V.local.lTot4)
+			F.Intrinsic.Math.Sub(V.local.lTot3,V.local.lTot4,V.Local.lChkDigit)
+		f.Intrinsic.Control.Else
+			F.Intrinsic.Math.Sub(V.local.lTot4,V.local.lTot3,V.Local.lChkDigit)
+		f.Intrinsic.Control.EndIf
+
+'get User Field
+'		F.Intrinsic.String.Build("User_{0}",V.ODBC.conx!RST.FieldVal!OE_User_Field,V.Local.sRet)
+
+'Variable.Passed.000150 - orderno
+
+		F.Intrinsic.String.LPad(V.Global.sOrdno.Trim,"0",7,V.Global.sOrdno)
+
+F.Intrinsic.Debug.Stop
+
+		F.Intrinsic.String.Build("00{0}{1}{2}{3}",V.Args.sExtensionDigit,V.Args.sCompanyPrefix,V.Args.sSerilaRef,V.local.lChkDigit.String,V.Local.sSerilaRef)
+
+'		F.Intrinsic.String.Build("Update SHIPMENT_HEADER set {0} = '{1}' where order_no = '{2}' and  rtrim(ltrim(RECORD_TYPE)) = 'A' and pck_no = '{3}' ",V.Local.sRet,V.Local.sSerilaRef,V.Global.sOrdno,V.Global.sPklst,V.Local.sSql)
+'		F.ODBC.Connection!conx.Execute(V.Local.sSql)
+
+		f.Intrinsic.Control.If(v.Args.Container,=,"CARTON")
+			f.Intrinsic.String.Build("Update BOL_CARTON_NUM set USER_DFND_NO = '{0}' where PCK_NO = '{1}' and CRTN_NO = '{2}'",V.Local.sSerilaRef,v.Global.sPklst,v.Args.Carton,v.Local.Ssql)
+		f.Intrinsic.Control.ElseIf(v.Args.Container,=,"PALLET")
+			f.Intrinsic.String.Build("update BOL_PALLET_NUM set USR_DFND_NO = '{0}' where PCK_NO = '{1}' and PLLT_NO = '{2}'",V.Local.sSerilaRef,v.Global.sPklst,v.Args.Pallet,v.Local.Ssql)
+		f.Intrinsic.Control.ElseIf(v.Args.Container,=,"MIXED")
+'			f.Intrinsic.String.Build("update BOL_CART_NUM_SSCC set SSCC = '{0}' where PCK_NO = '{1}' and CRTN_NO = '{2}' and LINE = '{3}'",V.Local.sSerilaRef,v.Global.sPklst,v.Args.Carton,v.Args.Seq,v.Local.Ssql)
+			' Insert Into BOL_CART_NUM_SSCC values ('0001195','00000001','0001567','0001','0000002300','')
+			f.Intrinsic.String.Build("Insert Into BOL_CART_NUM_SSCC values('{0}','{1}','{2}','{3}','{4}','')",v.Global.sPklst,v.Args.Carton,v.Global.sOrdno,v.Args.Seq,V.Local.sSerilaRef,v.Local.Ssql)
+		f.Intrinsic.Control.EndIf
+
+		F.ODBC.Connection!conx.Execute(V.Local.sSql)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Update_chkDigit_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Update_chkDigit.End
+
+Program.Sub.CreateFlag.Start
+F.Intrinsic.Control.SetErrorHandler("CreateFlag_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+v.Local.sFilname.Declare(string)
+v.Local.sRet.Declare(string)
+v.Local.sSSCCFlag.Declare(string)
+V.Local.sUser.Declare(string)
+
+V.Local.sUser.Set(v.Caller.User)
+
+f.Intrinsic.Control.If(v.args.SSCCFlag,<>,"Y")
+	v.Local.sSSCCFlag.Set("N")
+f.Intrinsic.Control.Else
+'FOR Amazon
+	v.Local.sSSCCFlag.Set("Y")
+f.Intrinsic.Control.endif
+
+f.Intrinsic.String.Build("{0}*!*{1}",v.Caller.Terminal,v.Local.sSSCCFlag,v.Local.sRet)
+
+f.Intrinsic.String.Build("{0}{1}.sscc",v.Caller.Terminal,V.Local.sUser.Trim,v.Local.sFilname)
+
+F.Intrinsic.String.Concat(V.Caller.LocalGSSTempDir,"\",v.Local.sFilname,V.Local.sFilname)
+F.Intrinsic.File.String2File(V.Local.sFilname,v.Local.sRet)
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("CreateFlag_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4524_SSCC.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.CreateFlag.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4524_SSCC$}$RAN$}$4/25/2017 11:07:13 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$Create unique SSCC numbers for Labels for each pallet and Carton.
+Program.Sub.Comments.End

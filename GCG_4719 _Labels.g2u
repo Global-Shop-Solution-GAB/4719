@@ -1,0 +1,497 @@
+Program.Sub.ScreenSU.Start
+Gui.frmLabel..create
+Gui.frmLabel..caption("Labels")
+Gui.frmLabel..size(4110,2955)
+Gui.frmLabel..minx(0)
+Gui.frmLabel..miny(0)
+Gui.frmLabel..position(0,0)
+Gui.frmLabel..event(UnLoad,Unload)
+Gui.frmLabel..forecolor(0)
+Gui.frmLabel..fontstyle(,)
+Gui.frmLabel..BackColor(-2147483633)
+Gui.frmLabel..maxbutton(False)
+Gui.frmLabel..minbutton(False)
+Gui.frmLabel..mousepointer(0)
+Gui.frmLabel..AlwaysOnTop(True)
+Gui.frmLabel.frame1.Create(Frame)
+Gui.frmLabel.frame1.Size(2820,2025)
+Gui.frmLabel.frame1.Position(60,195)
+Gui.frmLabel.frame1.Caption("Print Label Copies")
+Gui.frmLabel.lbl1.create(label,"Pallets :",True,1275,255,1,135,420,True,0,Arial,8,-2147483633,0)
+Gui.frmLabel.lbl1.defaultvalue("")
+Gui.frmLabel.lbl1.Parent("frame1")
+Gui.frmLabel.lbl2.Create(Label,"Cartons :",True,1275,255,1,135,885,True,0,"Arial",8,-2147483633,0)
+Gui.frmLabel.lbl2.Parent("frame1")
+Gui.frmLabel.lbl2.DefaultValue("")
+Gui.frmLabel.txtCartoncount.Create(TextBox,"1",True,855,300,0,1470,825,True,0,"Arial",8,-2147483643,1)
+Gui.frmLabel.txtCartoncount.Parent("frame1")
+Gui.frmLabel.txtCartoncount.MaxLength(5)
+Gui.frmLabel.txtCartoncount.NumericOnly(2)
+Gui.frmLabel.txtCartoncount.DefaultValue("")
+Gui.frmLabel.txtPalletCount.create(textbox,"1",True,855,300,0,1470,390,True,0,Arial,8,-2147483643,1)
+Gui.frmLabel.txtPalletCount.numericonly(2)
+Gui.frmLabel.txtPalletCount.maxLength(5)
+Gui.frmLabel.txtPalletCount.defaultvalue("")
+Gui.frmLabel.txtPalletCount.Parent("frame1")
+Gui.frmLabel.cmdok.create(button)
+Gui.frmLabel.cmdok.caption("OK")
+Gui.frmLabel.cmdok.size(855,375)
+Gui.frmLabel.cmdok.position(75,1380)
+Gui.frmLabel.cmdok.event(Click,cmdok_Click)
+Gui.frmLabel.cmdok.defaultvalue("")
+Gui.frmLabel.cmdok.Parent("frame1")
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.iBIRunID.Declare(Long,-1)
+V.Global.iBILogID.Declare(Long,-1)
+V.uGlobal.uBOLShip.Declare("uBOLShip")
+
+V.Global.bMixed.Declare(boolean)
+V.Global.bSentinel.Declare(Boolean,False)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	' RAN 
+	' (House of Doolittle)
+
+	F.ODBC.Connection!con.OpenCompanyConnection
+	F.Intrinsic.Control.CallSub(Loaddata)
+
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.LoadData.Start
+F.Intrinsic.Control.Try
+	V.Local.sSql.Declare(String)
+	V.Local.iUB.Declare(Long,0)
+	V.Local.sSO.Declare(String)
+	V.Local.sAddres.Declare(String)
+	V.Local.sCSZ.Declare(String)
+	V.Local.sWayB.Declare(String)
+	
+	'Getting run ID passed down
+	V.Global.iBIRunID.Set(V.Passed.DATA-GAB-0)
+	'Getting log ID passed down
+	V.Global.iBILogID.Set(V.Passed.DATA-GAB-1)
+	'Getting Sentinel flag passed down
+	V.Global.bSentinel.Set(V.Passed.DATA-GAB-2)
+	
+	F.Intrinsic.String.Build(" Select distinct RUNID,LOGID,WAYBILL_NO,PCK_NO,SO_NBR,CUST_PO,SHIP_NAME,SHIP_ADDRS1,SHIP_ADDRS2,SHIP_ADDRS3,SHIP_ADDRS4,SHIP_ADDRS5,SHIP_CITY,SHIP_STATE,SHIP_ZIP,SHIP_COUNTRY From Y_OE_SHIP_BOL where RUNID = {0} ",V.Global.iBIRunID,V.Local.sSql)
+	F.Data.DataTable.CreateFromSQL("DTMaster","con",V.Local.sSql,True)
+	
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_NAME","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_add1","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_add2","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_CITY","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_STATE","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_ZIP","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIPF_COUNTRY","string")
+	F.Data.DataTable.AddColumn("DTMaster","Carrier","string")
+	F.Data.DataTable.AddColumn("DTMaster","SHIP_ADDRS","string")
+	F.Data.DataTable.AddColumn("DTMaster","PalletCnt","long")
+	F.Data.DataTable.AddColumn("DTMaster","CartonCnt","long")
+	
+	F.Intrinsic.Control.If(V.DataTable.DTMaster.rowcount,>,0)
+	
+		V.Local.sWayB.Set(V.DataTable.DTMaster(V.Local.iUB).WayBill_No!fieldvaltrim)
+	
+		F.Intrinsic.Control.If(V.DataTable.DTMaster(V.Local.iUB).SHIP_ADDRS2!fieldvaltrim,<>,"")
+			F.Intrinsic.Control.If(V.DataTable.DTMaster(V.Local.iUB).SHIP_ADDRS3!fieldvaltrim,<>,"")
+			
+				F.Intrinsic.Control.If(V.DataTable.DTMaster(V.Local.iUB).SHIP_ADDRS4!fieldvaltrim,<>,"")
+					V.Local.sAddres.Set("4")
+				F.Intrinsic.Control.Else
+					V.Local.sAddres.Set("3")
+				F.Intrinsic.Control.EndIf 
+				
+			F.Intrinsic.Control.Else
+				V.Local.sAddres.Set("2")
+			F.Intrinsic.Control.EndIf
+			
+		F.Intrinsic.Control.Else
+			V.Local.sAddres.Set("1")
+		F.Intrinsic.Control.EndIf
+	
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIP_ADDRS",V.Local.sAddres)
+	
+		F.Intrinsic.Control.CallSub(GetData,"WayBill_Nbr",V.Local.sWayB)
+		F.Intrinsic.Control.CallSub(Generate_Label,"WayBill_Nbr",V.Local.sWayB)
+	
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox("No Records found")		
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.DataTable.DTLabels.RowCount,>,0)
+		F.Global.BI.PrintCodesoftLabelFromDataTable(V.Global.iBIRunID,V.Global.iBILogID,"DTLabels","",True)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.Close("DTLabels")
+	F.Data.DataTable.Close("DTMaster")
+	
+	F.Intrinsic.Control.CallSub(Unload)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.LoadData.End
+
+Program.Sub.GetData.Start
+F.Intrinsic.Control.Try
+	V.Local.sSQL.Declare(String)
+	V.Local.sUfld.Declare(String)
+	V.Local.iUB.Declare(long,0)
+	
+	F.Intrinsic.String.Build("select Cust_no,from_name,from_Adrs1,from_Adrs2,from_city,from_State,from_Zip,from_country  from BOL_MASTER  where WAYBILL_NO= '{0}' ",V.Args.WayBill_Nbr,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,False)
+	
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_NAME",V.ODBC.con!rst.FieldValTrim!from_name)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_add1",V.ODBC.con!rst.FieldValTrim!from_Adrs1)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_add2",V.ODBC.con!rst.FieldValTrim!from_Adrs2)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_CITY",V.ODBC.con!rst.FieldValTrim!from_city)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_STATE",V.ODBC.con!rst.FieldValTrim!from_State)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_ZIP",V.ODBC.con!rst.FieldValTrim!from_Zip)
+		F.Data.DataTable.SetValue("DTMaster",-1,"SHIPF_COUNTRY",V.ODBC.con!rst.FieldValTrim!from_country)
+	
+		F.Intrinsic.string.build("select SHIP_VIA from V_SHIPMENT_HEADER  where WAY_BILL = '{0}' ",V.Args.WayBill_Nbr,V.Local.sSQL)
+		F.ODBC.Connection!con.OpenLocalRecordsetRO("rst2",V.Local.sSQL)
+		F.Intrinsic.Control.If(V.ODBC.con!rst2.EOF,=,False)
+			F.Data.DataTable.SetValue("DTMaster",-1,"Carrier",V.ODBC.con!rst2.FieldValTrim!SHIP_VIA)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rst2.Close
+	
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rst.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.GetData.End
+
+Program.Sub.Generate_Label.Start
+F.Intrinsic.Control.Try
+	V.Local.sSql.Declare(String)
+	V.Local.TotPallet.Declare(long)
+	V.Local.TotCarton.Declare(long)
+	V.Local.sPickNo.Declare(String)
+	V.Local.sFilter.Declare(string)
+	V.Local.DTName.Declare(string)
+	
+	F.Intrinsic.String.LPad(V.Args.WayBill_Nbr,"0",7,V.Local.sPickNo)
+	
+		'Total Count
+	F.Intrinsic.string.build("select cartons,pallets  from V_BOL_HEADER  where WAYBILL_NO= '{0}' ",V.Args.WayBill_Nbr,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,False)
+
+		F.Intrinsic.Control.CallSub(getssccflag)
+
+		F.Intrinsic.Control.If(V.Args.ssccflag,<>,"Y")
+		'check fro Inner labels or not
+		'Pallet takes precedence
+			F.Intrinsic.Control.If(V.ODBC.con!rst.FieldValTrim!pallets,>,0)
+				V.Local.TotPallet.Set(V.ODBC.con!rst.FieldVal!pallets)
+				F.Data.DataTable.SetValue("DTMaster",-1,"PalletCnt",V.ODBC.con!rst.FieldValTrim!pallets)
+
+				V.Local.sSQL.set("select PALET.PCK_No,PALET.PLLT_NO,USR_DFND_NO,'Pallet' as LblType,PALET.PKGD_Weight as Weight_PKGD,count(PALET.PCK_No) as CNT,' ' as CRTN_NO ")
+				F.Intrinsic.string.build(" {0} from BOL_Pallet_NUM PALET join BOL_PACK_DTL DTL on PALET.PCK_No = DTL.PCK_No and PALET.Pllt_no = DTL.Pllt_no" ,V.Local.sSQL,V.Local.sSQL)  
+				F.Intrinsic.string.build(" {0} where  PALET.PCK_No = '{1}' group by PALET.PCK_No,PALET.PLLT_NO,USR_DFND_NO, LblType,PKGD_Weight " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+				F.Data.DataTable.CreateFromSQL("DTPLT1","con",V.local.ssql)
+
+				'===========================================Check pallet for multiple parts
+				F.Intrinsic.string.build("select a.PLLT_NO,count(*) as PLTCNT from (select PLLT_NO,part,count(*) from BOL_PACK_DTL where PCK_No = '{0}' group by PLLT_NO,part) as a group by a.PLLT_NO" ,V.Local.sPickNo,V.Local.sSQL)
+				F.Data.DataTable.CreateFromSQL("DTCNTPLT","con",V.local.ssql)
+
+				F.Data.Linq.Join("InnerJoin","DataTable","DTCNTPLT*!*DTCNTTemp","DataTable","DTPLT1*!*DTPLTTemp","DTCNTTemp.PLLT_NO = DTPLTTemp.PLLT_NO","DTPLTTemp.PCK_No*!*DTPLTTemp.PLLT_NO*!*DTPLTTemp.USR_DFND_NO*!*DTPLTTemp.LblType*!*DTPLTTemp.Weight_PKGD*!*DTPLTTemp.CNT*!*DTPLTTemp.CRTN_NO*!*DTCNTTemp.PLTCNT","","","","DTPLT",True)		
+
+				V.Local.sSQL.set("select DTL.PCK_No,DTL.PLLT_NO,DTL.part,DTL.cust_part, Ln_User_2,Ln_User_3,Ln_User_4 from BOL_PACK_DTL DTL ")
+				F.Intrinsic.string.build(" {0} join v_shipment_lines Ship on DTL.Pck_no = Ship.Pck_no and DTL.order_line = Ship.order_rec where  DTL.PCK_No = '{1}' " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+				F.Data.DataTable.CreateFromSQL("DTPART","con",V.local.ssql)
+
+				F.Data.Linq.Join("InnerJoin","DataTable","DTPLT*!*DTPLTTemp","DataTable","DTPART*!*DTPartTemp","DTPLTTemp.PLLT_NO = DTPartTemp.PLLT_NO","DTPLTTemp.PCK_No*!*DTPLTTemp.USR_DFND_NO*!*DTPLTTemp.LblType*!*DTPLTTemp.Weight_PKGD*!*DTPLTTemp.CNT*!*DTPartTemp.PLLT_NO*!*DTPartTemp.part*!*DTPartTemp.cust_part*!*DTPartTemp.Ln_User_2*!*DTPartTemp.Ln_User_3*!*DTPartTemp.Ln_User_4*!*DTPLTTemp.CRTN_NO*!*DTPLTTemp.PLTCNT","","","","DTData1",True)
+
+				V.Local.sFilter.Set("CNT>1 and PLTCNT>1")
+				F.Data.DataView.Create("DTData1","DVDTData1")
+				F.Data.DataView.SetFilter("DTData1","DVDTData1",V.Local.sFilter)
+				F.Intrinsic.Control.If(V.DataView.DTData1!DVDTData1.rowcount,>,0)
+					F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Part","MIXED")
+					F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"cust_part","")
+					F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_2","")
+					F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_3","")
+					F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_4","")
+				F.Intrinsic.Control.EndIf			
+
+				F.Data.DataView.Create("DTData1","DVDTData2")
+				F.Data.DataView.ToDataTableDistinct("DTData1","DVDTData2","DTPKG","PCK_No*!*USR_DFND_NO*!*LblType*!*Weight_PKGD*!*CNT*!*PLLT_NO*!*part*!*cust_part*!*Ln_User_2*!*Ln_User_3*!*Ln_User_4*!*CRTN_NO")
+
+
+			F.Intrinsic.Control.ElseIf(V.ODBC.con!rst.FieldValTrim!cartons,>,0)
+				V.Local.TotCarton.Set(V.ODBC.con!rst.FieldVal!cartons)
+				F.Data.DataTable.SetValue("DTMaster",-1,"CartonCnt",V.ODBC.con!rst.FieldValTrim!cartons)
+
+				V.Local.sSQL.set("select   CART.PCK_No,CART.CRTN_NO,User_DFND_NO as USR_DFND_NO,'Carton' as LblType,' ' as PLLT_NO,DTL.part,DTL.cust_part, Ln_User_1,Ln_User_2,Ln_User_3,Ln_User_4,CART.PKGD_Weight as Weight_PKGD ")
+  				F.Intrinsic.string.build(" {0} from BOL_CARTON_NUM CART left Join BOL_PACK_DTL DTL on CART.PCK_No = DTL.PCK_No and CART.crtn_no = DTL.crtn_no join v_shipment_lines Ship on DTL.Pck_no = Ship.Pck_no and DTL.order_line = Ship.order_rec ",V.Local.sSQL,V.Local.sSQL)
+  				F.Intrinsic.string.build(" {0} where  CART.PCK_No = '{1}' and User_DFND_NO <> 'MIXED' union select SSCC.PCK_No,SSCC.CRTN_NO,SSCC,'SSCC' AS LblType,' ' as PLLT_NO ,DTL.part,DTL.cust_part, Ln_User_1,Ln_User_2,Ln_User_3,Ln_User_4 ,PKGD_Weight as Weight_PKGD",V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+    			F.Intrinsic.string.build(" {0} from BOL_CART_NUM_SSCC SSCC join v_shipment_lines Ship on SSCC.Pck_no = Ship.Pck_no and SSCC.line = Ship.order_rec Join BOL_PACK_DTL DTL on SSCC.PCK_No = DTL.PCK_No and SSCC.crtn_no = DTL.crtn_no and SSCC.line = DTL.order_line  where SSCC.PCK_No = '{1}'",V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+
+				F.Data.DataTable.CreateFromSQL("DTPKG","con",V.local.ssql)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else 
+			'for Amazon
+				V.Local.TotPallet.Set(V.ODBC.con!rst.FieldVal!pallets)
+				F.Data.DataTable.SetValue("DTMaster",-1,"PalletCnt",V.ODBC.con!rst.FieldValTrim!pallets)
+
+				V.Local.TotCarton.Set(V.ODBC.con!rst.FieldVal!cartons)
+				F.Data.DataTable.SetValue("DTMaster",-1,"CartonCnt",V.ODBC.con!rst.FieldValTrim!cartons)
+
+
+				V.Local.sSQL.set("select PALET.PCK_No,PALET.PLLT_NO,USR_DFND_NO,'Pallet' as LblType,PALET.PKGD_Weight as Weight_PKGD,count(PALET.PCK_No) as CNT,' ' as CRTN_NO ")
+				F.Intrinsic.string.build(" {0} from BOL_Pallet_NUM PALET join BOL_PACK_DTL DTL on PALET.PCK_No = DTL.PCK_No and PALET.Pllt_no = DTL.Pllt_no" ,V.Local.sSQL,V.Local.sSQL)  
+				F.Intrinsic.string.build(" {0} where  PALET.PCK_No = '{1}' group by PALET.PCK_No,PALET.PLLT_NO,USR_DFND_NO, LblType,PKGD_Weight " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+
+				F.Intrinsic.string.build(" {0} union select CART.PCK_No,' ' as PLLT_NO,USER_DFND_NO,'Carton' as LblType,CART.PKGD_Weight,count(CART.PCK_No) as CNT,CART.CRTN_NO " ,V.Local.sSQL,V.Local.sSQL)
+				F.Intrinsic.string.build(" {0} from BOL_CARTON_NUM CART join BOL_PACK_DTL DTL on CART.PCK_No = DTL.PCK_No and CART.CRTN_NO = DTL.CRTN_NO",V.Local.sSQL,V.Local.sSQL)  
+				F.Intrinsic.string.build(" {0} where  CART.PCK_No = '{1}' group by CART.PCK_No,CART.CRTN_NO,USER_DFND_NO, LblType,PKGD_Weight " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+
+				F.Data.DataTable.CreateFromSQL("DTPLT1","con",V.local.ssql)
+				
+				'===========================================Check pallet for multiple parts
+				F.Intrinsic.string.build("select a.PLLT_NO,count(*) as PLTCNT from (select PLLT_NO,part,count(*) from BOL_PACK_DTL where PCK_No = '{0}'   group by PLLT_NO,part) as a group by a.PLLT_NO" ,V.Local.sPickNo,V.Local.sSQL)
+				F.Data.DataTable.CreateFromSQL("DTCNTPLT","con",V.local.ssql)
+
+				F.Data.Linq.Join("LeftJoin","DataTable","DTPLT1*!*DTPLTTemp","DataTable","DTCNTPLT*!*DTCNTTemp","DTCNTTemp.PLLT_NO = DTPLTTemp.PLLT_NO","DTPLTTemp.PCK_No*!*DTPLTTemp.PLLT_NO*!*DTPLTTemp.USR_DFND_NO*!*DTPLTTemp.LblType*!*DTPLTTemp.Weight_PKGD*!*DTPLTTemp.CNT*!*DTPLTTemp.CRTN_NO*!*DTCNTTemp.PLTCNT","","","","DTPLT",True)
+
+
+				F.Intrinsic.Control.If(V.Local.TotPallet,>,0)
+				F.Intrinsic.Control.andIf(V.Local.TotCarton,>,0)
+					V.Local.DTName.Set("DTData2")
+				F.Intrinsic.Control.elseIf(V.Local.TotPallet,>,0)
+					V.Local.DTName.Set("DTData1")
+				F.Intrinsic.Control.elseIf(V.Local.TotCarton,>,0)
+					V.Local.DTName.Set("DTData2")
+				F.Intrinsic.Control.EndIf
+
+				F.Intrinsic.Control.If(V.Local.TotPallet,>,0)
+					V.Local.sSQL.set("select DTL.PCK_No,DTL.PLLT_NO,DTL.part,DTL.cust_part, Ln_User_2,Ln_User_3,Ln_User_4 from BOL_PACK_DTL DTL ")
+					F.Intrinsic.string.build(" {0} join v_shipment_lines Ship on DTL.Pck_no = Ship.Pck_no and DTL.order_line = Ship.order_rec where  DTL.PCK_No = '{1}' " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+					F.Data.DataTable.CreateFromSQL("DTPART","con",V.local.ssql)
+
+					F.Data.Linq.Join("InnerJoin","DataTable","DTPLT*!*DTPLTTemp","DataTable","DTPART*!*DTPartTemp","DTPLTTemp.PLLT_NO = DTPartTemp.PLLT_NO","DTPLTTemp.PCK_No*!*DTPLTTemp.USR_DFND_NO*!*DTPLTTemp.LblType*!*DTPLTTemp.Weight_PKGD*!*DTPLTTemp.CNT*!*DTPartTemp.PLLT_NO*!*DTPartTemp.part*!*DTPartTemp.cust_part*!*DTPartTemp.Ln_User_2*!*DTPartTemp.Ln_User_3*!*DTPartTemp.Ln_User_4*!*DTPLTTemp.CRTN_NO*!*DTPLTTemp.PLTCNT","","","","DTData1",True)
+
+					V.Local.sFilter.Set("CNT>1 and PLTCNT>1")
+					F.Data.DataView.Create("DTData1","DVDTData1")
+					F.Data.DataView.SetFilter("DTData1","DVDTData1",V.Local.sFilter)
+					F.Intrinsic.Control.If(V.DataView.DTData1!DVDTData1.rowcount,>,0)
+						F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Part","MIXED")
+						F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"cust_part","")
+						F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_2","")
+						F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_3","")
+						F.Data.Dataview.SetValue("DTData1","DVDTData1",-1,"Ln_User_4","")
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf 
+
+				F.Intrinsic.Control.If(V.Local.TotCarton,>,0)
+					V.Local.sSQL.set("select DTL.PCK_No,DTL.CRTN_NO,DTL.part,DTL.cust_part, Ln_User_2,Ln_User_3,Ln_User_4 from BOL_PACK_DTL DTL ")
+					F.Intrinsic.string.build(" {0} join v_shipment_lines Ship on DTL.Pck_no = Ship.Pck_no and DTL.order_line = Ship.order_rec where  DTL.PCK_No = '{1}' " ,V.Local.sSQL,V.Local.sPickNo,V.Local.sSQL)
+					F.Data.DataTable.CreateFromSQL("DTCPART","con",V.local.ssql)
+
+					F.Data.Linq.Join("InnerJoin","DataTable","DTPLT*!*DTPLTTemp","DataTable","DTCPART*!*DTPartTemp","DTPLTTemp.CRTN_NO = DTPartTemp.CRTN_NO","DTPLTTemp.PCK_No*!*DTPLTTemp.USR_DFND_NO*!*DTPLTTemp.LblType*!*DTPLTTemp.Weight_PKGD*!*DTPLTTemp.CNT*!*DTPLTTemp.PLLT_NO*!*DTPartTemp.part*!*DTPartTemp.cust_part*!*DTPartTemp.Ln_User_2*!*DTPartTemp.Ln_User_3*!*DTPartTemp.Ln_User_4*!*DTPLTTemp.CRTN_NO*!*DTPLTTemp.PLTCNT","","","","DTData2",True)
+					V.Local.sFilter.Set("CNT>1")
+					F.Data.DataView.Create("DTData2","DVDTData3")
+					F.Data.DataView.SetFilter("DTData2","DVDTData3",V.Local.sFilter)
+					F.Intrinsic.Control.If(V.DataView.DTData2!DVDTData3.rowcount,>,0)
+						F.Data.Dataview.SetValue("DTData2","DVDTData3",-1,"Part","MIXED")
+						F.Data.Dataview.SetValue("DTData2","DVDTData3",-1,"cust_part","")
+						F.Data.Dataview.SetValue("DTData2","DVDTData3",-1,"Ln_User_2","")
+						F.Data.Dataview.SetValue("DTData2","DVDTData3",-1,"Ln_User_3","")
+						F.Data.Dataview.SetValue("DTData2","DVDTData3",-1,"Ln_User_4","")
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				'merge datatable 1 & 2
+
+				F.Intrinsic.Control.If(V.Local.TotPallet,>,0)
+				F.Intrinsic.Control.andIf(V.Local.TotCarton,>,0)
+					F.Data.DataTable.Merge("DTData1","DTData2",True,1)
+				F.Intrinsic.Control.EndIf
+
+			F.Data.DataView.Create(V.Local.DTName,"DVDTData2")
+			F.Data.DataView.ToDataTableDistinct(V.Local.DTName,"DVDTData2","DTPKG","PCK_No*!*USR_DFND_NO*!*LblType*!*Weight_PKGD*!*CNT*!*PLLT_NO*!*part*!*cust_part*!*Ln_User_2*!*Ln_User_3*!*Ln_User_4*!*CRTN_NO")
+
+		F.Intrinsic.Control.EndIf
+
+		F.Data.Linq.Join("InnerJoin","DataTable","DTMaster*!*DTMTemp","DataTable","DTPKG*!*DTCTemp","DTMTemp.PCK_No = DTCTemp.PCK_No","DTMTemp.RUNID*!*DTMTemp.LOGID*!*DTMTemp.WAYBILL_NO*!*DTMTemp.PCK_NO*!*DTMTemp.SO_NBR*!*DTMTemp.CUST_PO*!*DTMTemp.SHIP_NAME*!*DTMTemp.SHIP_ADDRS1*!*DTMTemp.SHIP_ADDRS2*!*DTMTemp.SHIP_ADDRS3*!*DTMTemp.SHIP_ADDRS4*!*DTMTemp.SHIP_ADDRS5*!*DTMTemp.SHIP_CITY*!*DTMTemp.SHIP_STATE*!*DTMTemp.SHIP_ZIP*!*DTMTemp.SHIP_COUNTRY*!*DTCTemp.PART*!*DTCTemp.CUST_PART*!*DTMTemp.SHIPF_NAME*!*DTMTemp.SHIPF_add1*!*DTMTemp.SHIPF_add2*!*DTMTemp.SHIPF_CITY*!*DTMTemp.SHIPF_STATE*!*DTMTemp.SHIPF_ZIP*!*DTMTemp.SHIPF_COUNTRY*!*DTMTemp.Carrier*!*DTMTemp.SHIP_ADDRS*!*DTMTemp.CartonCnt*!*DTMTemp.PalletCnt*!*DTCTemp.USR_DFND_NO*!*DTCTemp.LblType*!*DTCTemp.Weight_PKGD*!*DTCTemp.PLLT_NO*!*DTCTemp.CRTN_NO*!*DTCTemp.Ln_User_2*!*DTCTemp.Ln_User_3*!*DTCTemp.Ln_User_4","","","","DTLabels",True)
+
+		F.Data.DataTable.Close("DTPKG")
+		
+		F.Intrinsic.Control.If(V.Args.ssccflag,=,"Y")
+			Gui.frmLabel..Show 
+			Gui.frmLabel..WaitForDismiss
+		F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rst.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.Generate_Label.End
+
+Program.Sub.GetSSCCFlag.Start
+F.Intrinsic.Control.Try
+	V.Local.sFilname.Declare(String)
+	V.Local.bFileExists.Declare
+	V.Local.iFile.Declare
+	V.Local.sText.Declare
+	V.Local.sUser.Declare
+	
+	V.Local.sUser.Set(V.Caller.User)
+	F.Intrinsic.String.Build("{0}{1}.sscc",V.Caller.Terminal,V.Local.sUser.Trim,V.Local.sFilname)
+	F.Intrinsic.String.Concat(V.Caller.LocalGSSTempDir,"\",V.Local.sFilname,V.Local.sFilname)
+	
+	F.Intrinsic.File.Exists(V.Local.sFilname,V.Local.bFileExists)
+	F.Intrinsic.Control.If(V.Local.bFileExists,=,True)
+		F.Intrinsic.File.GetHandle(V.Local.iFile)
+		F.Intrinsic.File.OpenForRead(V.Local.sFilname,V.Local.iFile)
+		F.Intrinsic.File.ReadFile(V.Local.iFile,V.Local.sText)
+		F.Intrinsic.String.Split(V.Local.sText,"*!*",V.Local.sText)
+		F.Intrinsic.Control.If(V.Local.sText(0),=,V.Caller.Terminal)
+			F.Intrinsic.Variable.AddRV("SSCCFlag",V.Local.sText(1))
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Variable.AddRV("SSCCFlag","N")
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.File.CloseFile(V.Local.iFile)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Variable.AddRV("SSCCFlag","N")
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.GetSSCCFlag.End
+
+Program.Sub.cmdok_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.lPalletLBLPrint.Declare(long)
+	V.Local.lCartLBLPrint.Declare(long)
+	V.Local.sFilter.Declare(String)
+	
+	F.Intrinsic.Control.If(V.Screen.frmLabel!txtPalletCount.Text,=,"","or",V.Screen.frmLabel!txtPalletCount.Text,=,"0")
+		F.Intrinsic.UI.Msgbox("Invalid Field value")
+		Gui.frmLabel.txtPalletCount.SetFocus
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.elseIf(V.Screen.frmLabel!txtCartonCount.Text,=,"","or",V.Screen.frmLabel!txtCartonCount.Text,=,"0")
+		F.Intrinsic.UI.Msgbox("Invalid Field value")
+		Gui.frmLabel.txtCartoncount.SetFocus
+	F.Intrinsic.Control.elseIf(V.Screen.frmLabel!txtPalletCount.Text,=,"1","and",V.Screen.frmLabel!txtCartonCount.Text,=,"1")
+		Gui.frmLabel..Visible(false)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.Else
+		Gui.frmLabel..Visible(false)	
+		
+		'Print Label Copies for Pallet & Cartons
+		V.Local.lPalletLBLPrint.Set(V.Screen.frmLabel!txtPalletCount.Text)
+		V.Local.lCartLBLPrint.Set(V.Screen.frmLabel!txtCartonCount.Text)
+		
+		F.Intrinsic.Control.If(V.Local.lPalletLBLPrint.Long,=,V.Local.lCartLBLPrint.Long) 
+			V.Local.sFilter.Set("")
+			F.Intrinsic.Control.CallSub(lblcopies,"FILTER",V.Local.sFilter,"COPIES",V.Local.lPalletLBLPrint)
+		F.Intrinsic.Control.elseIf(V.Local.lPalletLBLPrint.Long,>,1) 
+		F.Intrinsic.Control.AndIf(V.Local.lCartLBLPrint.Long,>,1) 
+			V.Local.sFilter.Set("PLLT_NO<>''")
+			F.Intrinsic.Control.CallSub(lblcopies,"FILTER",V.Local.sFilter,"COPIES",V.Local.lPalletLBLPrint)
+			V.Local.sFilter.Set("CRTN_NO<>''")
+			F.Intrinsic.Control.CallSub(lblcopies,"FILTER",V.Local.sFilter,"COPIES",V.Local.lCartLBLPrint)
+		F.Intrinsic.Control.ElseIf(V.Local.lPalletLBLPrint.Long,>,1) 
+			V.Local.sFilter.Set("PLLT_NO<>''")
+			F.Intrinsic.Control.CallSub(lblcopies,"FILTER",V.Local.sFilter,"COPIES",V.Local.lPalletLBLPrint)
+		F.Intrinsic.Control.ElseIf(V.Local.lCartLBLPrint.Long,>,1) 
+			V.Local.sFilter.Set("CRTN_NO<>''")
+			F.Intrinsic.Control.CallSub(lblcopies,"FILTER",V.Local.sFilter,"COPIES",V.Local.lCartLBLPrint)
+		F.Intrinsic.Control.EndIf 
+		
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdok_Click.End
+
+Program.Sub.LBLCopies.Start
+F.Intrinsic.Control.Try
+	V.Local.i.Declare(Long)
+	V.Local.j.Declare(Long)
+	V.Local.lrecCount.Declare(Long)
+	V.Local.sDVName.Declare(String)
+	V.Local.sDTName.Declare(String)
+	V.Local.lCopies.Declare(Long)
+	
+	
+	F.Intrinsic.Math.Sub(V.Args.COPIES,1,V.Local.lCopies)
+	F.Data.DataView.Create("DTLabels","DV")
+	F.Data.DataView.SetFilter("DTLabels","DV",V.Args.FILTER)
+	F.Intrinsic.Control.for(V.Local.i,1,V.Local.lCopies,1)   
+		F.Intrinsic.String.Build("DTLBL{0}",V.Local.i,V.Local.sDTName)  
+		F.Data.DataView.ToDataTable("DTLabels","DV",V.Local.sDTName)
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Data.DataView.Close("DTLabels","DV")
+	
+	F.Intrinsic.Control.for(V.Local.i,1,V.Local.lCopies,1)   
+		F.Intrinsic.String.Build("DTLBL{0}",V.Local.i,V.Local.sDTName)  
+		F.Data.DataTable.Merge(V.Local.sDTName,"DTLabels",True,1)
+	F.Intrinsic.Control.Next(V.Local.i)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.LBLCopies.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.Try
+
+	F.ODBC.Connection!con.Close
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(CatchError, "Sub", V.Ambient.CurrentSubroutine, "Error", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.Unload.End
+
+Program.Sub.CatchError.Start
+F.Intrinsic.Control.Try
+	V.Local.sErrorMessage.Declare(String)
+	
+	F.Intrinsic.String.Build("Program: GCG_4719_Labels.g2u{0}{0}Sub: {1}{0}Error: {2}{0}Error Description: {3}",V.Ambient.NewLine,V.Args.Sub,V.Args.Error,V.Args.ErrorDescription,V.Local.sErrorMessage)
+	F.Intrinsic.UI.Msgbox(V.Local.sErrorMessage,"Unhandled Error Occurred")
+	
+	F.Intrinsic.Control.If(V.Args.Sub.UCase,!=,"UNLOAD")
+		F.Intrinsic.Control.CallSub(UnLoad)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.UI.Msgbox("Fatal Error occurred in program GCG_4719_Labels.g2u","Unhandled Error Occurred")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry	
+Program.Sub.CatchError.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4719 _Labels$}$Mitch$}$3/25/2014$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$SSCC Flag set to N
+
+When Pallet & Carton Exist - Print Only Pallet
+
+
+
+
+SSCC Flag set to Y  - Amazon
+When Pallet & Carton Exist - Print both  Pallet & Carton
+${$4$}$0$}$$}$0$}$-1$}$Ranjit$}$2/10/2017$}$1
+Program.Sub.Comments.End
